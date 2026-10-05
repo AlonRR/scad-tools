@@ -1,0 +1,6 @@
+__pycache__/
+*.stl
+*.png
+*.echo
+/printables/
+/preview/

@@ -1,0 +1,7 @@
+version = 1
+
+# The files that cannot carry a header of their own, or where a comment line would be read as content.
+[[annotations]]
+path = ["README.md", ".gitignore", ".gitattributes", "REUSE.toml"]
+SPDX-FileCopyrightText = "2026 Alon A. Rabinowitz"
+SPDX-License-Identifier = "MPL-2.0"
