@@ -33,6 +33,10 @@ function dense(pts, step = 0.4) = concat([for (i = [0 : len(pts) - 2]) let(a = p
 function min_gap(p, q) = min([for (a = p) min([for (b = q) norm(a - b)])]);
 function last(v) = v[len(v) - 1];
 
+function _sum(v, i = 0) = i >= len(v) ? 0 : v[i] + _sum(v, i + 1);
+// How long a route is as drawn - its corners rounded to radius r: the wire it takes, end to end.
+function route_length(pts, r) = let(q = rounded(pts, r)) _sum([for (i = [0 : len(q) - 2]) norm(q[i + 1] - q[i])]);
+
 // A wire of diameter d and colour c along a route, its bends of radius r; s shrinks it all round, so a
 // collision check passes a wire that only rests against a surface.
 module wire(pts, c, d, r, s = 0, fn = 10) let(q = rounded(pts, r)) color(c) for (i = [0 : len(q) - 2])
