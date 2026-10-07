@@ -122,7 +122,9 @@ def corners(p, tol=0.05):
     return (simplify(ring[:far + 1], tol)[:-1] + simplify(ring[far:], tol))[:-1]
 
 
-def sections(stl, axis, positions):
+def sections(stl, axis, positions, max_points=24):
+    """max_points caps the corners listed per loop, 0 for all of them. A capped list ends in "...", and what
+    it leaves out is easy to read as absent: a body's side blocks hid in the tail of its outline once."""
     u, v = FRAMES[axis][1], FRAMES[axis][2]
     with tempfile.TemporaryDirectory() as tmp:
         cuts = parallel(lambda at: cut_svg(stl, axis, at, tmp) + (at,), positions)
@@ -139,7 +141,8 @@ def sections(stl, axis, positions):
                 kind = "solid" if depth % 2 == 0 else "hole "
                 xs, ys = [q[0] for q in p], [q[1] for q in p]
                 c = corners(p)
-                pts = " ".join(f"({x:.2f},{y:.2f})" for x, y in c[:24]) + (" ..." if len(c) > 24 else "")
+                shown = c if not max_points else c[:max_points]
+                pts = " ".join(f"({x:.2f},{y:.2f})" for x, y in shown) + (f" ... {len(c) - len(shown)} more" if len(shown) < len(c) else "")
                 print(f"   {kind} {u} {min(xs):8.2f} .. {max(xs):8.2f}   {v} {min(ys):8.2f} .. {max(ys):8.2f}   "
                       f"area {area(p):9.2f}   {pts}")
     return failed == 0
@@ -204,6 +207,7 @@ def main():
     s.add_argument("--from", dest="start", type=float)
     s.add_argument("--to", dest="stop", type=float)
     s.add_argument("--step", type=float, default=1.0)
+    s.add_argument("--points", type=int, default=24, help="corners listed per loop, 0 for all")
     m = sub.add_parser("3mf")
     m.add_argument("file")
     a = ap.parse_args()
@@ -221,7 +225,7 @@ def main():
         positions += [a.start + i * a.step * (1 if a.stop >= a.start else -1) for i in range(n + 1)]
     if not positions:
         ap.error("sections needs --at, or --from and --to")
-    return sections(a.stl, a.axis, positions)
+    return sections(a.stl, a.axis, positions, a.points)
 
 
 if __name__ == "__main__":
