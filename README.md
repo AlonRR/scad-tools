@@ -9,7 +9,8 @@ git submodule, pinned to the commit it was checked with.
 | [`lib/shapes.scad`](lib/shapes.scad) | plain shapes - a rounded rectangle, boxes and cylinders by their ends, concave fillets along an edge or round a cylinder - and `spread()`, where a row of slots starts |
 | [`lib/routes.scad`](lib/routes.scad) | wire routes as lists of corners: drawn with arcs at the corners, their tightest bend, the gap between two |
 | [`lib/axes.scad`](lib/axes.scad) | the red, green and blue xyz arrows for every rendered figure, labelled to face the camera |
-| [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh, a slice, and the model's `fdm_*` values against the profile it was sliced with |
+| [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with |
+| [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body, from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
 | [`scripts/scad-controls.sh`](scripts/scad-controls.sh) | every control in a model README's "Guards" block, rendered, each said to have fired or not |
 | [`scripts/scad-preview.sh`](scripts/scad-preview.sh) | previews, cross-sections and slices - of the exported STL, so an export bug cannot hide behind a good render |
 | [`scripts/printables.py`](scripts/printables.py) | each printed part as one self-contained `.scad`, and its STL, for Printables - checked to be the same solid as the sources |
@@ -67,6 +68,17 @@ was checked with.
 can export a part whose assert failed - and [uv](https://docs.astral.sh/uv/) for the Python scripts.
 `scad-check.sh` also slices, with PrusaSlicer. For someone else's large mesh, set `OPENSCAD` to a nightly:
 its Manifold backend cuts and unions an 8 MB STL in seconds, where the release takes minutes or hours.
+
+## Tests
+
+```sh
+uv run --with pytest pytest tests
+```
+
+[`tests/`](tests/) checks `stl-mesh.py` on small solids written for each fault, and on
+[`tests/fixtures/flush-clip.scad`](tests/fixtures/flush-clip.scad), a fault OpenSCAD really made - and that
+`scad-check.sh` warns on it. Those last tests need OpenSCAD (`OPENSCAD`, with the Manifold backend) and
+PrusaSlicer, and are skipped without them.
 
 ## Licence
 

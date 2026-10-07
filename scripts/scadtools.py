@@ -42,6 +42,52 @@ def triangles(path):
             for f in (struct.unpack("<9f", data[84 + i * 50 + 12:84 + i * 50 + 48]) for i in range(count))]
 
 
+def _f32(p):
+    return struct.unpack("<3f", struct.pack("<3f", *p))
+
+
+def mesh_problems(path):
+    """What is wrong with an STL as a solid, read from its own corners - not from a slicer, which repairs a mesh
+    as it loads it and then calls the result manifold. Corners are matched exactly as written, as OpenSCAD
+    writes a shared corner the same way every time: a closed solid has every edge on exactly two faces, run
+    once each way, and is one body. A facet is degenerate when two of its corners are one point, or become one
+    as 32-bit floats, which is how a slicer reads them: PrusaSlicer removes such a facet and calls the rest
+    manifold. A facet with three corners on a line is not counted: OpenSCAD writes those to close a mesh where
+    a corner sits on another face's edge, and slicers take them as they are. Returns {} for a clean solid,
+    else a count of each fault found."""
+    ids, faces, degenerate = {}, [], 0
+    for tri in triangles(path):
+        f = tuple(ids.setdefault(p, len(ids)) for p in tri)
+        if len(set(f)) < 3 or len({_f32(p) for p in tri}) < 3:
+            degenerate += 1
+        if len(set(f)) == 3:
+            faces.append(f)
+    directed, undirected = {}, {}
+    for n, (a, b, c) in enumerate(faces):
+        for e in ((a, b), (b, c), (c, a)):
+            directed[e] = directed.get(e, 0) + 1
+            undirected.setdefault(frozenset(e), []).append(n)
+    # Bodies: faces joined through edges that two faces share, as a closed surface's are.
+    parent = list(range(len(faces)))
+
+    def root(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    for users in undirected.values():
+        if len(users) == 2:
+            parent[root(users[0])] = root(users[1])
+    found = {
+        "degenerate facets": degenerate,
+        "open edges": sum(1 for u in undirected.values() if len(u) == 1),
+        "edges on more than two faces": sum(1 for u in undirected.values() if len(u) > 2),
+        "edges wound the same way twice": sum(1 for n in directed.values() if n > 1),
+        "bodies": len({root(i) for i in range(len(faces))}),
+    }
+    return {k: v for k, v in found.items() if (v > 1 if k == "bodies" else v > 0)}
+
+
 def stl_stats(path):
     """Facets, volume, area, bounding box and a hash of the distinct corners - enough to tell two exports of
     the same solid from two different solids, where comparing the files' bytes cannot: OpenSCAD's facet order

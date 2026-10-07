@@ -15,6 +15,8 @@
 #   WARN   the model echoes WARNING — it builds and prints, but something is
 #          compromised (a wall under the perimeter floor, a notch into the case,
 #          a stage landing mid-layer). A judgement call, so you get the STL too.
+#          Also: a mesh the slicer had to repair as it loaded it, or one whose
+#          own edges (stl-mesh.py) say it is not one clean closed body.
 #
 # Exit codes:  0 clean   1 will not build / must not print   2 builds, with warnings
 #
@@ -80,6 +82,27 @@ printf '%s\n' "$info" | grep -E "size_|number_of_facets|number_of_parts|manifold
 printf '%s\n' "$info" | grep -q "manifold = yes" || bad "not manifold"
 parts=$(printf '%s\n' "$info" | awk -F= '/number_of_parts/ {gsub(/ /,"",$2); print $2}')
 [ "${parts:-1}" = "1" ] || bad "STL is $parts parts, expected 1"
+# PrusaSlicer repairs a mesh as it loads it - removes degenerate facets, closes gaps - and only THEN says
+# "manifold = yes". What it repaired it lists only when it repaired something, so those lines are the tell.
+# Seen 7 Oct 2026: a part's teeth clipped flush with its plate left facets a hair wide; the summary read
+# manifold, one part, and the eight facets it had removed went unread. It still prints, so this warns.
+rep=$(printf '%s\n' "$info" | grep -E "^(degenerate_facets|edges_fixed|facets_removed|facets_added|facets_reversed|backwards_edges) =" | tr -s ' ' | paste -sd ' ' - || true)
+if [ -n "$rep" ]; then
+    printf '  ~~ the slicer repaired the mesh as it loaded it: %s\n' "$rep"
+    warned=1; nwarn=$(( ${nwarn:-0} + 1 ))
+fi
+# And the STL's own edges, read without a slicer's repairs in between: every edge on two faces, one body.
+here=$(cd "$(dirname "$0")" && pwd)
+if command -v uv >/dev/null 2>&1; then
+    if mesh=$(uv run -q "$here/stl-mesh.py" "$STL" 2>&1); then
+        note "mesh: one closed body"
+    else
+        printf '  ~~ mesh: %s\n' "${mesh##*: }"
+        warned=1; nwarn=$(( ${nwarn:-0} + 1 ))
+    fi
+else
+    note "mesh: not checked - uv is not on PATH (stl-mesh.py)"
+fi
 
 # --- 3. slice ---------------------------------------------------------------
 echo "==> slice  [$PRINT_PROFILE / $FILAMENT]"
