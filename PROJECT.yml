@@ -1,0 +1,11 @@
+# The projects this repository holds. The format is SCHEMA.md in project-ledger.
+# schema version: set by `ledger migrate` or `ledger init` -- do not edit by hand
+schema: 1
+projects:
+  - name:        OpenSCAD tools
+    kind:        maintain
+    state:       healthy
+    asserted_by: "printer-enclosure's fit checks, scad-check and stl-inspect ran clean on it, 7 Oct 2026"
+    next:        "publish main on GitHub, so the commit the projects pin can be fetched there"
+    trackers:    [README.md]
+    review:      2026-10-07
