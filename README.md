@@ -13,6 +13,7 @@ git submodule, pinned to the commit it was checked with.
 | [`scripts/scad-controls.sh`](scripts/scad-controls.sh) | every control in a model README's "Guards" block, rendered, each said to have fired or not |
 | [`scripts/scad-preview.sh`](scripts/scad-preview.sh) | previews, cross-sections and slices - of the exported STL, so an export bug cannot hide behind a good render |
 | [`scripts/printables.py`](scripts/printables.py) | each printed part as one self-contained `.scad`, and its STL, for Printables - checked to be the same solid as the sources |
+| [`scripts/stl-inspect.py`](scripts/stl-inspect.py) | measuring someone else's model before remixing it: an STL's bounds, its cross-sections at chosen heights along any axis - every loop as solid or hole, with its box, area and corners - and how a 3MF's author prints each part |
 | [`scripts/scadtools.py`](scripts/scadtools.py) | what the Python scripts share: running OpenSCAD and reading its output, and telling two exports of one solid from two solids |
 
 Libraries in `lib/` define modules and functions only - no variables, nothing drawn - so `use` brings in
@@ -64,7 +65,8 @@ was checked with.
 
 [OpenSCAD 2021.01](https://openscad.org/downloads.html) on `PATH` - the release, not a nightly: a nightly
 can export a part whose assert failed - and [uv](https://docs.astral.sh/uv/) for the Python scripts.
-`scad-check.sh` also slices, with PrusaSlicer.
+`scad-check.sh` also slices, with PrusaSlicer. For someone else's large mesh, set `OPENSCAD` to a nightly:
+its Manifold backend cuts and unions an 8 MB STL in seconds, where the release takes minutes or hours.
 
 ## Licence
 
