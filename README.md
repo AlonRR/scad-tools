@@ -12,6 +12,7 @@ git submodule, pinned to the commit it was checked with.
 | [`lib/gasket.scad`](lib/gasket.scad) | a printed TPU gasket: a hollow bead squeezed in a groove, as a ring round any closed path of rounded corners, with its groove, the vent its hollow needs, a test piece to measure its squeeze, and the distance from its path for clearance checks - and why each is so |
 | [`lib/fdm.scad`](lib/fdm.scad) | shapes the printer needs: teardrop holes across the layers, a hole bridged up through a ceiling, a height in whole layers |
 | [`lib/springs.scad`](lib/springs.scad) | a printed clip's finger as a cantilever: its force, its root stress, how far a force bends it |
+| [`lib/nuts.scad`](lib/nuts.scad) | captive hex nuts in place of heat-set inserts: the slot a nut slides into from one side, and the nut, for fit checks |
 | [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with |
 | [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body, from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
 | [`scripts/scad-controls.sh`](scripts/scad-controls.sh) | every control in a model README's "Guards" block, rendered, each said to have fired or not |
@@ -87,6 +88,10 @@ PrusaSlicer, and are skipped without them.
 offer, from a small file that `use`s each, and judges the mesh: one closed body, its box, its volume against
 the section's area times the centreline's length. Each check has a control that must fail it - the ring without
 its vent is two bodies. It needs OpenSCAD with the Manifold backend too.
+
+[`tests/test_nuts.py`](tests/test_nuts.py) fits a nut in its slot and slides it out through the mouth: each
+intersection must leave nothing, and a slot narrower than the nut, or cut short of the block's face, must
+leave something.
 
 ## Changing it
 
