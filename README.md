@@ -88,6 +88,20 @@ offer, from a small file that `use`s each, and judges the mesh: one closed body,
 the section's area times the centreline's length. Each check has a control that must fail it - the ring without
 its vent is two bodies. It needs OpenSCAD with the Manifold backend too.
 
+## Changing it
+
+Several projects add to this repository, sometimes at the same time.
+
+- **Work in a checkout of your own** - a `git worktree` on its own branch, or a separate clone - never in a
+  working tree someone else may be editing. Two writers in one tree share its files and its index, so one
+  commits or discards the other's unfinished work, and neither is warned.
+- **Land on `main` by fast-forward**: fetch, rebase onto the latest `main`, run the tests, push. A refused push
+  means `main` moved, so do it again. Never force.
+- **A new module or function is open to any project.** Search `lib/` first for one that already does the job.
+- **Changing an existing one is more than an edit.** The projects that pin this repository call it by name, and
+  a pin hides a break until that project next updates. Run the checks of every project that has this
+  repository as a submodule against the change, or add a new name beside the old one.
+
 ## Licence
 
 [MPL-2.0](LICENSES/MPL-2.0.txt): use these files in a project under any licence; changes to the files
