@@ -62,6 +62,23 @@ def test_two_solids_are_two_bodies(tmp_path):
     assert check(stl(tmp_path / "t.stl", faces, P + far))["bodies"] == 2
 
 
+def test_two_bodies_are_clean_where_two_are_expected(tmp_path):
+    far = [(x + 50, y, z) for x, y, z in P]
+    faces = TETRA + [tuple(i + 4 for i in f) for f in TETRA]
+    path = stl(tmp_path / "t.stl", faces, P + far)
+    assert scadtools.mesh_problems(path, bodies=2) == {}
+    assert scadtools.mesh_problems(path, bodies=3) == {"bodies": 2}
+
+
+def test_the_script_takes_the_bodies_expected(tmp_path):
+    far = [(x + 50, y, z) for x, y, z in P]
+    two = stl(tmp_path / "two.stl", TETRA + [tuple(i + 4 for i in f) for f in TETRA], P + far)
+    run = lambda *a: subprocess.run([sys.executable, str(MESH), *a], capture_output=True, text=True, check=False)
+    assert run(str(two)).returncode == 1
+    out = run("--bodies", "2", str(two))
+    assert out.returncode == 0 and "2 closed bodies" in out.stdout, out.stdout
+
+
 def test_two_solids_sharing_an_edge_overshare_it(tmp_path):
     # A second tetrahedron on the first one's edge 0-1, mirrored through the plane z = -y: four faces at that edge.
     q = P + [(0, -10, 0), (0, 0, -10)]
@@ -111,6 +128,28 @@ def test_the_flush_clip_is_found(tmp_path):
 
 def test_the_clip_moved_inside_is_clean(tmp_path):
     assert check(render(tmp_path, 0.01)) == {}
+
+
+@pytest.mark.skipif(not Path(PSLICER).exists(), reason="no PrusaSlicer")
+@pytest.mark.parametrize("parts, code", [(None, 1), ("2", 0)])
+def test_scad_check_takes_a_plate_of_parts(tmp_path, parts, code):
+    # Two separate cubes, as a plate of two pieces is: one part too many, unless PARTS says two.
+    if not OPENSCAD:
+        pytest.skip("no OpenSCAD")
+    scad = tmp_path / "plate.scad"
+    # Each fdm_ value on its own line, as scad-check reads them for its cross-check with the profile.
+    scad.write_text("fdm_layer_h = 0.2;\nfdm_extrusion_w = 0.45;\ncube(10);\ntranslate([20, 0, 0]) cube(10);\n",
+                    encoding="utf-8")
+    env = dict(os.environ, OPENSCAD=OPENSCAD)
+    env.pop("PARTS", None)
+    if parts:
+        env["PARTS"] = parts
+    run = subprocess.run(["sh", str(ROOT / "scripts" / "scad-check.sh"), scad.as_posix()], capture_output=True,
+                         text=True, env=env, check=False)
+    assert run.returncode == code, run.stdout[-1500:]
+    assert ("expected 1" in run.stdout) == (not parts), run.stdout[-1500:]
+    if parts:
+        assert "mesh: 2 closed bodies" in run.stdout, run.stdout[-1500:]
 
 
 @pytest.mark.skipif(not Path(PSLICER).exists(), reason="no PrusaSlicer")

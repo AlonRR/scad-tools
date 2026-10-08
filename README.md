@@ -13,8 +13,8 @@ git submodule, pinned to the commit it was checked with.
 | [`lib/fdm.scad`](lib/fdm.scad) | shapes the printer needs: teardrop holes across the layers, a hole bridged up through a ceiling, a height in whole layers |
 | [`lib/springs.scad`](lib/springs.scad) | a printed clip's finger as a cantilever: its force, its root stress, how far a force bends it |
 | [`lib/nuts.scad`](lib/nuts.scad) | captive hex nuts in place of heat-set inserts: the slot a nut slides into from one side, and the nut, for fit checks |
-| [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with |
-| [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body, from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
+| [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with; `PARTS=N` for a plate of N separate parts |
+| [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body - or `--bodies N` - from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
 | [`scripts/scad-controls.sh`](scripts/scad-controls.sh) | every control in a model README's "Guards" block, rendered, each said to have fired or not |
 | [`scripts/scad-preview.sh`](scripts/scad-preview.sh) | previews, cross-sections and slices - of the exported STL, so an export bug cannot hide behind a good render |
 | [`scripts/printables.py`](scripts/printables.py) | each printed part as one self-contained `.scad`, and its STL, for Printables - checked to be the same solid as the sources |

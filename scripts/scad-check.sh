@@ -5,6 +5,7 @@
 # Verify an OpenSCAD part end to end: render -> STL -> manifold -> slice, and cross-check the model's fdm_* values against the profile it was actually sliced with.
 #
 #   scad-check.sh MODEL.scad [PRINT_PROFILE] [FILAMENT_PROFILE]
+#   PARTS=N scad-check.sh ...      a plate of N separate parts (default 1)
 #
 # Two kinds of problem, and the distinction is the point:
 #
@@ -81,7 +82,8 @@ printf '%s\n' "$info" | grep -E "size_|number_of_facets|number_of_parts|manifold
     | sed 's/^/  /'
 printf '%s\n' "$info" | grep -q "manifold = yes" || bad "not manifold"
 parts=$(printf '%s\n' "$info" | awk -F= '/number_of_parts/ {gsub(/ /,"",$2); print $2}')
-[ "${parts:-1}" = "1" ] || bad "STL is $parts parts, expected 1"
+want=${PARTS:-1}
+[ "${parts:-1}" = "$want" ] || bad "STL is $parts parts, expected $want"
 # PrusaSlicer repairs a mesh as it loads it - removes degenerate facets, closes gaps - and only THEN says
 # "manifold = yes". What it repaired it lists only when it repaired something, so those lines are the tell.
 # Seen 7 Oct 2026: a part's teeth clipped flush with its plate left facets a hair wide; the summary read
@@ -94,8 +96,8 @@ fi
 # And the STL's own edges, read without a slicer's repairs in between: every edge on two faces, one body.
 here=$(cd "$(dirname "$0")" && pwd)
 if command -v uv >/dev/null 2>&1; then
-    if mesh=$(uv run -q "$here/stl-mesh.py" "$STL" 2>&1); then
-        note "mesh: one closed body"
+    if mesh=$(uv run -q "$here/stl-mesh.py" --bodies "$want" "$STL" 2>&1); then
+        note "mesh: ${mesh##*: }"
     else
         printf '  ~~ mesh: %s\n' "${mesh##*: }"
         warned=1; nwarn=$(( ${nwarn:-0} + 1 ))
