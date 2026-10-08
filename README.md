@@ -9,6 +9,9 @@ git submodule, pinned to the commit it was checked with.
 | [`lib/shapes.scad`](lib/shapes.scad) | plain shapes - a rounded rectangle, boxes and cylinders by their ends, concave fillets along an edge or round a cylinder - and `spread()`, where a row of slots starts |
 | [`lib/routes.scad`](lib/routes.scad) | wire routes as lists of corners: drawn with arcs at the corners, their tightest bend, the gap between two |
 | [`lib/axes.scad`](lib/axes.scad) | the red, green and blue xyz arrows for every rendered figure, labelled to face the camera |
+| [`lib/gasket.scad`](lib/gasket.scad) | a printed TPU gasket: a hollow bead squeezed in a groove, as a ring round any closed path of rounded corners, with its groove, the vent its hollow needs, a test piece to measure its squeeze, and the distance from its path for clearance checks - and why each is so |
+| [`lib/fdm.scad`](lib/fdm.scad) | shapes the printer needs: teardrop holes across the layers, a hole bridged up through a ceiling, a height in whole layers |
+| [`lib/springs.scad`](lib/springs.scad) | a printed clip's finger as a cantilever: its force, its root stress, how far a force bends it |
 | [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with |
 | [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body, from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
 | [`scripts/scad-controls.sh`](scripts/scad-controls.sh) | every control in a model README's "Guards" block, rendered, each said to have fired or not |
@@ -79,6 +82,11 @@ uv run --with pytest pytest tests
 [`tests/fixtures/flush-clip.scad`](tests/fixtures/flush-clip.scad), a fault OpenSCAD really made - and that
 `scad-check.sh` warns on it. Those last tests need OpenSCAD (`OPENSCAD`, with the Manifold backend) and
 PrusaSlicer, and are skipped without them.
+
+[`tests/test_lib.py`](tests/test_lib.py) draws or echoes what `gasket.scad`, `fdm.scad` and `springs.scad`
+offer, from a small file that `use`s each, and judges the mesh: one closed body, its box, its volume against
+the section's area times the centreline's length. Each check has a control that must fail it - the ring without
+its vent is two bodies. It needs OpenSCAD with the Manifold backend too.
 
 ## Licence
 
