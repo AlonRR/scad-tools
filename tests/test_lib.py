@@ -267,3 +267,45 @@ def test_a_cantilevers_force_and_root_stress_are_the_beam_formulas(tmp_path):
     assert found["f"] == pytest.approx(force, rel=1e-4)
     assert found["s"] == pytest.approx(force * L * (t / 2) / i, rel=1e-4)  # M c / I at the root
     assert found["d"] == pytest.approx(d, rel=1e-4)
+
+
+# ---------------------------------------------------------------- shapes: a 45-degree slope over any outline
+# A square 20 across, inset 2 at the bottom and growing back to itself at the top, 2 up: each section is the inset
+# square grown by the height, round at the corners - the cone's polygon of fn sides, inscribed.
+def slant_volume(side, d, rise, fn=23, e=0.01):
+    inner = side - 2 * d
+    disk = fn / 2 * math.sin(2 * math.pi / fn)  # the fn-gon's area over r squared
+    return e * inner * inner + rise * inner * inner + 2 * inner * rise * rise + disk * rise ** 3 / 3
+
+
+def test_a_slant_rises_at_45_degrees_from_the_inset_outline_to_the_outline(tmp_path):
+    stats, faults, log = draw(tmp_path, "slant(2, 2) square(20, center = true);", libs=("shapes",))
+    assert faults == {}, log[-800:]
+    # the top reaches the outline to within the cone's facets: rise (1 - cos(180 / fn)) short at most
+    sag = 2 * (1 - math.cos(math.pi / 23)) + 1e-3
+    assert stats["lo"][:2] == pytest.approx([-10, -10], abs=sag) and stats["lo"][2] == pytest.approx(0, abs=1e-3)
+    assert stats["hi"][:2] == pytest.approx([10, 10], abs=sag) and stats["hi"][2] == pytest.approx(2.01, abs=1e-3)
+    assert stats["volume"] == pytest.approx(slant_volume(20, 2, 2), rel=0.002)
+
+
+# The L's notch, by its concave corner at (25, 20), just outside the L, near the top: a slope over the L's own
+# outline leaves it empty. hull() of the same two sections - the mistake the slant is for - fills it.
+NOTCH = "translate([25.3, 20.3, 1]) cube([1, 1, 0.9])"
+L2D = f"polygon({ELL})"
+
+
+HULLED = (f"hull() {{ linear_extrude(0.01) offset(delta = -1.5) {L2D}; "
+          f"translate([0, 0, 1.5]) linear_extrude(0.01) {L2D}; }}")
+
+
+@pytest.mark.parametrize("shape, empty", [(f"slant(1.5, 1.5) {L2D};", True), (HULLED, False)],
+                         ids=["slant", "hull, the control"])
+def test_a_slant_keeps_an_outlines_concave_corner(tmp_path, shape, empty):
+    if not OPENSCAD:
+        pytest.skip("no OpenSCAD")
+    f = source(tmp_path, f"intersection() {{ {shape} {NOTCH}; }}", ("shapes",))
+    out = f.with_suffix(".stl")
+    run = subprocess.run([OPENSCAD, "--backend=manifold", "-o", str(out), str(f)], capture_output=True, text=True,
+                         check=False)
+    left = abs(scadtools.stl_stats(out)["volume"]) if out.exists() and out.stat().st_size else 0.0
+    assert (left == 0) == empty, (left, (run.stdout + run.stderr)[-600:])

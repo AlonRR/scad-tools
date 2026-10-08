@@ -78,3 +78,28 @@ def test_the_nut_slides_out_through_the_mouth(tmp_path, out, opens):
     way = f"hull() for (x = [0, 12]) translate([x, 0, 0]) {NUT};"
     left = volume(tmp_path, f"intersection() {{ {BLOCK % (out, 0.3)} {way} }}")
     assert (left == 0) == opens, left
+
+
+# A pull nut's pocket, its seat's roof at z = 0: the seat 2.8 tall, 0.2 a side; under it the way, 5 long, 0.25 a
+# side, open at its foot. In a block whose underside is 6 under the roof, the way opens through it; 1 long, it does not.
+POCKET = "pull_nut_pocket(5.5, 2.8, way = %s, fit = %s, way_fit = 0.25)"
+PBLOCK = f"difference() {{ translate([-8, -8, -6]) cube([16, 16, 8]); {POCKET}; }}"
+PULLED = "translate([0, 0, -0.01 - 2.4]) hex_nut(5.5, 2.4)"  # pulled up to the roof, a hair under it
+
+
+def test_a_pull_pocket_is_its_seat_over_its_way_the_corners_along_x(tmp_path):
+    ac_way = (5.5 / 2 + 0.25) / 0.8660254037844386
+    assert box(tmp_path, POCKET % (5, 0.2) + ";") == [round(-ac_way, 3), -3.0, -7.8, round(ac_way, 3), 3.0, 0]
+
+
+@pytest.mark.parametrize("fit, fits", [(0.2, True), (-0.1, False)])
+def test_the_nut_fits_its_seat(tmp_path, fit, fits):
+    left = volume(tmp_path, f"intersection() {{ {PBLOCK % (5, fit)} {PULLED}; }}")
+    assert (left == 0) == fits, left
+
+
+@pytest.mark.parametrize("way, opens", [(5, True), (1, False)])
+def test_the_nut_comes_up_the_way_from_under_the_block(tmp_path, way, opens):
+    path = "hull() for (z = [0, -8]) translate([0, 0, z]) " + PULLED + ";"
+    left = volume(tmp_path, f"intersection() {{ {PBLOCK % (way, 0.2)} {path} }}")
+    assert (left == 0) == opens, left

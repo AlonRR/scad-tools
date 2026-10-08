@@ -84,14 +84,15 @@ uv run --with pytest pytest tests
 `scad-check.sh` warns on it. Those last tests need OpenSCAD (`OPENSCAD`, with the Manifold backend) and
 PrusaSlicer, and are skipped without them.
 
-[`tests/test_lib.py`](tests/test_lib.py) draws or echoes what `gasket.scad`, `fdm.scad` and `springs.scad`
-offer, from a small file that `use`s each, and judges the mesh: one closed body, its box, its volume against
-the section's area times the centreline's length. Each check has a control that must fail it - the ring without
-its vent is two bodies. It needs OpenSCAD with the Manifold backend too.
+[`tests/test_lib.py`](tests/test_lib.py) draws or echoes what `gasket.scad`, `fdm.scad`, `springs.scad` and
+`shapes.scad`'s `slant` offer, from a small file that `use`s each, and judges the mesh: one closed body, its box,
+its volume against the section's area times the centreline's length. Each check has a control that must fail it -
+the ring without its vent is two bodies, and a hull() in place of the slant fills an L's concave corner. It needs
+OpenSCAD with the Manifold backend too.
 
-[`tests/test_nuts.py`](tests/test_nuts.py) fits a nut in its slot and slides it out through the mouth: each
-intersection must leave nothing, and a slot narrower than the nut, or cut short of the block's face, must
-leave something.
+[`tests/test_nuts.py`](tests/test_nuts.py) fits a nut in its slot and slides it out through the mouth, and a
+pull nut in its pocket's seat and down its way out of the block: each intersection must leave nothing, and a
+slot or seat narrower than the nut, or one cut short of the block's face, must leave something.
 
 ## Changing it
 

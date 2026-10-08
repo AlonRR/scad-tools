@@ -37,6 +37,18 @@ module cyl_x(y, z, r, x0, x1) {
     translate([x0, y, z]) rotate([0, 90, 0]) cylinder(r = r, h = x1 - x0);
 }
 
+// The solid under a 45-degree slope over any outline, its child: at z = 0 the outline inset by d, at height z inset by
+// d - z, up to z = rise. Minkowski's sum of the inset outline and a cone, so it is exact where the outline's convex
+// turns are at least d round - sharper ones come out rounded - and its concave corners stay sharp, where hull()
+// would fill them. Cut it out of a part for a 45-degree chamfer round an edge of any shape, or out of a collar for
+// its slope. The cone has an odd number of facets, fn, so its slope does not land on the outline's own vertices;
+// between them it falls short of the true offset by up to rise (1 - cos(180 / fn)) - carry `rise` a little past
+// the outline where the slope must reach it.
+module slant(d, rise, fn = 23, e = 0.01) minkowski() {
+    linear_extrude(e) offset(delta = -d) children();
+    cylinder(r1 = 0, r2 = rise, h = rise, $fn = fn);
+}
+
 // ------------------------------------------------------------------ coves: concave fillets
 // The cove in its own frame: the face it stands on along +X, the feature up +Y, radius r. It reaches e
 // past both, into the face and the feature, so it joins them by a face rather than an edge.
