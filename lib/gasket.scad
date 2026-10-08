@@ -24,7 +24,9 @@ Why it is made this way - each learned on a part that was printed or checked:
 - VENTED. A closed ring's hollow is a sealed void: air shut in at print temperature stiffens the bead and pushes
   as it warms, and the mesh is two bodies - the void's own surface is the second. gasket_ring() cuts a notch
   through the ring's inner wall; open to one side only, it is a dead end, and the outer wall and the ridge still
-  seal. A bead that crosses a ring should meet it hollow to hollow, so the one notch vents both.
+  seal. A bead that crosses a ring must meet it hollow to hollow - the ring's bars - so the one notch vents both:
+  merely laid across it, its hollow is closed at each end by the ring's inner wall. A straight bead whose ends
+  press on something takes a vent of its own, gasket_vent().
 - RUNS REACH PAST THEIR ENDS. A run that only touched its bend face to face exported as a second body once
   rounding left a hairline between them, so each run reaches e past its ends, into the bend.
 - MEASURE THE FORCE. What a millimetre of bead pushes back with at its squeeze is on no datasheet for printed TPU.
@@ -56,6 +58,14 @@ module gasket_bend(c, r, a0, a, b, fn = 48) {
         rotate_extrude(angle = a, $fn = fn) translate([r, 0]) gasket_section(b);
 }
 
+// A vent through the wall of the straight bead from p0 to p1: 1 mm long, its middle the fraction at of the way
+// along, through its left wall - or its right - from just over the hollow's floor to the eaves. Cut it from the
+// bead. Its sill stands 0.05 over the floor: cut level with it, the mesh had four degenerate facets, which a slicer
+// silently removes.
+module gasket_vent(p0, p1, b, at = 0.5, left = true, sill = 0.05, e = 0.01) let(u = p1 - p0, m = p0 + (p1 - p0) * at)
+    translate([m[0], m[1], 0]) rotate([0, 0, atan2(u[1], u[0])]) scale([1, left ? 1 : -1, 1])
+        translate([-0.5, b[0] / 2 - b[2] - e, b[2] + sill]) cube([1, b[2] + 2 * e, b[1] - b[0] / 2 - b[2] - sill]);
+
 // ------------------------------------------------------------------ the ring and its groove
 function _gk_unit(v) = v / norm(v);
 function _gk_r(R, i) = is_list(R) ? R[i] : R;
@@ -84,9 +94,13 @@ function _gk_seg(p, a, b) = let(ab = b - a) ab * ab == 0 ? norm(p - a)
 function path_distance(p, path) = min([for (i = [0 : len(path) - 1]) _gk_seg(p, path[i], path[(i + 1) % len(path)])]);
 
 // A closed ring of bead round the corners V - each [x, y], in either direction - each rounded on the bead's
-// centreline to its radius in R: one number for all, or a list, one each. It lies on z = 0, its ridge up. notch:
-// the vent through its inner wall, 1 mm long, midway along its longest side.
-module gasket_ring(V, R, b, notch = true, e = 0.01, fn = 48) {
+// centreline to its radius in R: one number for all, or a list, one each. It lies on z = 0, its ridge up.
+// - notch: the vent through its inner wall, 1 mm long - midway along its longest side (true), along side i (a
+//   number: the side from corner i to corner i + 1), or none (false).
+// - bars: straight beads [[p0, p1], ...] across it, each from one side's centreline to another's, whose hollows
+//   open into the ring's, so its one vent vents them too.
+// It is drawn as all its pieces' outsides less all their hollows, so a bar's hollow runs into the ring's.
+module gasket_ring(V, R, b, notch = true, bars = [], e = 0.01, fn = 48) {
     n = len(V);
     K = _gk_corners(V, R);
     radii = [for (i = [0 : n - 1]) _gk_r(R, i)];
@@ -97,22 +111,30 @@ module gasket_ring(V, R, b, notch = true, e = 0.01, fn = 48) {
             str("the side from ", V[i], " to ", V[j], " is too short for the bends at its ends"));
     runs = [for (i = [0 : n - 1]) [K[i][1], K[(i + 1) % n][0]]];
     lens = [for (r = runs) norm(r[1] - r[0])];
-    longest = [for (i = [0 : n - 1]) if (lens[i] == max(lens)) i][0];
+    side = is_num(notch) ? notch : [for (i = [0 : n - 1]) if (lens[i] == max(lens)) i][0];
+    assert(!is_num(notch) || (notch >= 0 && notch < n && lens[notch] >= 1),
+        str("side ", notch, " has no straight run 1 mm long for the notch"));
     difference() {
-        union() for (i = [0 : n - 1]) {
-            if (abs(K[i][4]) > 1e-6)
-                gasket_bend(K[i][2], radii[i], K[i][4] > 0 ? K[i][3] : K[i][3] + K[i][4], abs(K[i][4]), b, fn);
-            if (lens[i] > 1e-6) gasket_run(runs[i][0], runs[i][1], b, e);
-        }
-        if (notch) _gk_notch(runs[longest], _gk_area2(V) > 0, b, e);
+        _gk_pieces(K, radii, runs, lens, bars, b, e, fn, false);
+        _gk_pieces(K, radii, runs, lens, bars, b, e, fn, true);
+        if (is_num(notch) || notch == true) gasket_vent(runs[side][0], runs[side][1], b, 0.5, _gk_area2(V) > 0, e = e);
     }
 }
-// The vent: 1 mm along the run at its middle, through the wall on the ring's inside - left of the run when the ring
-// runs counterclockwise - from just over the hollow's floor to the eaves. Its sill stands 0.05 over the floor: cut
-// level with it, the mesh had four degenerate facets, which a slicer silently removes.
-module _gk_notch(run, ccw, b, e, sill = 0.05) let(u = run[1] - run[0], m = (run[0] + run[1]) / 2)
-    translate([m[0], m[1], 0]) rotate([0, 0, atan2(u[1], u[0])]) scale([1, ccw ? 1 : -1, 1])
-        translate([-0.5, b[0] / 2 - b[2] - e, b[2] + sill]) cube([1, b[2] + 2 * e, b[1] - b[0] / 2 - b[2] - sill]);
+// The ring's pieces - its bends, its runs, its bars - each solid: its outside, or its hollow.
+module _gk_pieces(K, radii, runs, lens, bars, b, e, fn, hollow) {
+    for (i = [0 : len(K) - 1]) {
+        if (abs(K[i][4]) > 1e-6) translate([K[i][2][0], K[i][2][1], 0])
+            rotate([0, 0, K[i][4] > 0 ? K[i][3] : K[i][3] + K[i][4]])
+                rotate_extrude(angle = abs(K[i][4]), $fn = fn) translate([radii[i], 0]) _gk_face(b, hollow);
+        if (lens[i] > 1e-6) _gk_bar(runs[i][0], runs[i][1], b, e, hollow);
+    }
+    for (r = bars) _gk_bar(r[0], r[1], b, e, hollow);
+}
+module _gk_face(b, hollow) if (hollow) offset(delta = -b[2]) polygon(_gk_house(b[0], b[1]));
+    else polygon(_gk_house(b[0], b[1]));
+module _gk_bar(p0, p1, b, e, hollow) let(v = p1 - p0)
+    translate([p0[0], p0[1], 0]) rotate([0, 0, atan2(v[1], v[0])]) rotate([90, 0, 90])
+        translate([0, 0, -e]) linear_extrude(height = norm(v) + 2 * e) _gk_face(b, hollow);
 
 // The ring's groove in plan: a band width wide about the same centreline - gasket_groove(b)[0] wide, extruded as
 // deep as gasket_groove(b)[1].

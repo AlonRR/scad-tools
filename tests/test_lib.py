@@ -30,6 +30,7 @@ LIB = ROOT / "lib"
 B = [3, 3, 0.45]  # a small bead: 3 wide, 3 tall, walls of one perimeter
 RECT = [[0, 0], [60, 0], [60, 30], [0, 30]]
 ELL = [[0, 0], [50, 0], [50, 20], [25, 20], [25, 40], [0, 40]]  # an L: one corner turns right
+JOG = [[0, 0], [60, 0], [60, 20], [50, 30], [50, 45], [0, 45]]  # a jog of two 45 degree bends, the second to the right
 
 
 def source(tmp_path, body, libs):
@@ -73,9 +74,15 @@ def section_area(w, h, t):
 
 
 def centreline(corners, r):
-    """The ring's centreline: its sides less each corner's two tangents, plus its arcs - every corner here 90 degrees."""
-    sides = sum(math.dist(corners[i - 1], corners[i]) for i in range(len(corners)))
-    return sides - len(corners) * 2 * r + len(corners) * math.pi / 2 * r
+    """The ring's centreline: its sides, less each corner's two tangents, plus each corner's arc."""
+    total = 0.0
+    for i, p in enumerate(corners):
+        a, b = corners[i - 1], corners[(i + 1) % len(corners)]
+        d1, d2 = (p[0] - a[0], p[1] - a[1]), (b[0] - p[0], b[1] - p[1])
+        turn = abs(math.atan2(d1[0] * d2[1] - d1[1] * d2[0], d1[0] * d2[0] + d1[1] * d2[1]))
+        ri = r[i] if isinstance(r, list) else r
+        total += math.dist(p, b) + ri * turn - 2 * ri * math.tan(turn / 2)
+    return total
 
 
 # ---------------------------------------------------------------- gasket
@@ -85,7 +92,7 @@ def test_the_groove_is_the_bead_and_its_room_wide_and_its_squeezed_height_deep(t
     assert found["d"] == pytest.approx([3.5, 2.4])  # the defaults: 0.25 each side, squeezed 20 %
 
 
-@pytest.mark.parametrize("corners", [RECT, ELL], ids=["rectangle", "L"])
+@pytest.mark.parametrize("corners", [RECT, ELL, JOG], ids=["rectangle", "L", "45 degree jog"])
 def test_a_ring_is_one_closed_body_of_the_sections_volume(tmp_path, corners):
     stats, faults, log = draw(tmp_path, f"gasket_ring({corners}, 5, {B});")
     assert faults == {}, log[-800:]
@@ -96,7 +103,7 @@ def test_a_ring_is_one_closed_body_of_the_sections_volume(tmp_path, corners):
     assert stats["hi"] == pytest.approx([max(xs) + 1.5, max(ys) + 1.5, 3], abs=1e-3)
 
 
-@pytest.mark.parametrize("corners", [RECT, ELL], ids=["rectangle", "L"])
+@pytest.mark.parametrize("corners", [RECT, ELL, JOG], ids=["rectangle", "L", "45 degree jog"])
 def test_without_its_notch_the_hollow_is_a_sealed_void(tmp_path, corners):
     # The control for the notch: closed, the hollow's own surface is a second body.
     _, faults, _ = draw(tmp_path, f"gasket_ring({corners}, 5, {B}, notch = false);")
@@ -112,6 +119,41 @@ def test_the_notch_opens_the_inner_wall_midway_along_the_longest_side(tmp_path, 
                                  f" gasket_ring({corners}, 5, {B}); }}")
     assert stats["lo"] == pytest.approx([29.5, y[0], 0.45 + 0.05], abs=1e-3)
     assert stats["hi"][:2] == pytest.approx([30.5, y[1]], abs=1e-3)
+
+
+def test_the_notch_can_be_put_on_a_chosen_side(tmp_path):
+    # side 1 runs from corner 1 to corner 2: up x = 60, the ring's inside -x of it
+    stats, _, _ = draw(tmp_path, f"difference() {{ gasket_ring({RECT}, 5, {B}, notch = false);"
+                                 f" gasket_ring({RECT}, 5, {B}, notch = 1); }}")
+    assert stats["lo"] == pytest.approx([58.5, 14.5, 0.5], abs=1e-3)
+    assert stats["hi"][:2] == pytest.approx([58.96, 15.5], abs=1e-3)
+
+
+BAR = [[[0, 15], [60, 15]]]  # across the rectangle, from one side's centreline to the other's
+
+
+def test_a_bar_across_the_ring_shares_its_hollow_and_its_vent(tmp_path):
+    ring, _, _ = draw(tmp_path, f"gasket_ring({RECT}, 5, {B});")
+    stats, faults, _ = draw(tmp_path, f"gasket_ring({RECT}, 5, {B}, bars = {BAR});")
+    assert faults == {}
+    # about the bar's length between the ring's inner walls; where they meet, a little of each is the other's
+    assert stats["volume"] - ring["volume"] == pytest.approx(section_area(*B) * (60 - 3), rel=0.03)
+
+
+def test_a_bead_merely_laid_across_the_ring_seals_its_own_hollow(tmp_path):
+    # The control for bars: the ring's inner walls close each end of a separate run's hollow.
+    _, faults, _ = draw(tmp_path, f"gasket_ring({RECT}, 5, {B}); gasket_run({BAR[0][0]}, {BAR[0][1]}, {B});")
+    assert faults == {"bodies": 2}
+
+
+def test_a_straight_bead_takes_a_vent_where_it_is_asked(tmp_path):
+    run, vent = f"gasket_run([0, -20], [0, 20], {B})", f"gasket_vent([0, -20], [0, 20], {B}, at = 0.75)"
+    stats, _, _ = draw(tmp_path, f"intersection() {{ {run}; {vent}; }}")
+    # three quarters of the way along, through its left wall - -X of a run up +Y
+    assert stats["lo"] == pytest.approx([-1.5, 9.5, 0.5], abs=1e-3)
+    assert stats["hi"][:2] == pytest.approx([-1.04, 10.5], abs=1e-3)
+    _, faults, _ = draw(tmp_path, f"difference() {{ {run}; {vent}; }}")
+    assert faults == {}
 
 
 def test_the_corners_can_each_take_their_own_radius(tmp_path):
