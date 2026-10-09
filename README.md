@@ -13,6 +13,7 @@ git submodule, pinned to the commit it was checked with.
 | [`lib/fdm.scad`](lib/fdm.scad) | shapes the printer needs: teardrop holes across the layers, a hole bridged up through a ceiling, a height in whole layers |
 | [`lib/springs.scad`](lib/springs.scad) | a printed clip's finger as a cantilever: its force, its root stress, how far a force bends it |
 | [`lib/nuts.scad`](lib/nuts.scad) | captive hex nuts in place of heat-set inserts: the slot a nut slides into from one side, and the nut, for fit checks |
+| [`lib/patterns.scad`](lib/patterns.scad) | patterns of holes for a grille or a mesh: the hemp-leaf pattern from its lattice, and a honeycomb of whole hexagonal holes with every web the same |
 | [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with; `PARTS=N` for a plate of N separate parts |
 | [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body - or `--bodies N` - from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
 | [`scripts/scad-controls.sh`](scripts/scad-controls.sh) | every control in a model README's "Guards" block, rendered, each said to have fired or not |
@@ -89,6 +90,11 @@ PrusaSlicer, and are skipped without them.
 its volume against the section's area times the centreline's length. Each check has a control that must fail it -
 the ring without its vent is two bodies, and a hull() in place of the slant fills an L's concave corner. It needs
 OpenSCAD with the Manifold backend too.
+
+[`tests/test_patterns.py`](tests/test_patterns.py) cuts a 1 mm plate with each pattern and weighs it: one period of the
+hemp-leaf lattice against its holes' share worked out from their shrunk inradius, and a honeycomb against its whole
+holes, each inside the rectangle and one web from its neighbours. Their controls are a bar of another width, and
+holes run into each other by a negative web.
 
 [`tests/test_nuts.py`](tests/test_nuts.py) fits a nut in its slot and slides it out through the mouth, and a
 pull nut in its pocket's seat and down its way out of the block: each intersection must leave nothing, and a
