@@ -80,6 +80,37 @@ def test_the_nut_slides_out_through_the_mouth(tmp_path, out, opens):
     assert (left == 0) == opens, left
 
 
+# The same slot with its back end the nut's own shape: in the same block.
+HBLOCK = "difference() { translate([-12, -12, -3]) cube([20, 24, 8.8]); nut_slot_hex_end(5.5, 2.8, out = %s, fit = %s); }"
+# A probe in a back corner of the square slot, beside the nut's back corner: open in the square slot, solid behind a
+# hex end, whose two faces there stand where the nut's do.
+CORNER = "translate([-3.3, 2.6, 0.5]) cube([0.2, 0.2, 1])"
+
+
+def test_the_hex_ended_slot_is_the_flats_plus_fit_wide_and_ends_in_a_corner_behind_the_axis(tmp_path):
+    back = (AF / 2 + 0.3) / 0.8660254037844386
+    assert box(tmp_path, "nut_slot_hex_end(5.5, 2.8, out = 10, fit = 0.3);") == [round(-back, 3), -3.05, 0, 10, 3.05, 2.8]
+
+
+@pytest.mark.parametrize("fit, fits", [(0.3, True), (-0.1, False)])
+def test_the_nut_fits_its_hex_ended_slot(tmp_path, fit, fits):
+    left = volume(tmp_path, f"intersection() {{ {HBLOCK % (10, fit)} {NUT}; }}")
+    assert (left == 0) == fits, left
+
+
+@pytest.mark.parametrize("out, opens", [(10, True), (1, False)])
+def test_the_nut_slides_out_through_the_hex_ended_slots_mouth(tmp_path, out, opens):
+    way = f"hull() for (x = [0, 12]) translate([x, 0, 0]) {NUT};"
+    left = volume(tmp_path, f"intersection() {{ {HBLOCK % (out, 0.3)} {way} }}")
+    assert (left == 0) == opens, left
+
+
+@pytest.mark.parametrize("slot, cut", [("nut_slot", True), ("nut_slot_hex_end", False)])
+def test_behind_the_nut_a_hex_end_leaves_the_corners_solid(tmp_path, slot, cut):
+    left = volume(tmp_path, f"intersection() {{ {slot}(5.5, 2.8, out = 10, fit = 0.3); {CORNER}; }}")
+    assert (left > 0) == cut, left
+
+
 # A pull nut's pocket, its seat's roof at z = 0: the seat 2.8 tall, 0.2 a side; under it the way, 5 long, 0.25 a
 # side, open at its foot. In a block whose underside is 6 under the roof, the way opens through it; 1 long, it does not.
 POCKET = "pull_nut_pocket(5.5, 2.8, way = %s, fit = %s, way_fit = 0.25)"

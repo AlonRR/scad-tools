@@ -9,7 +9,8 @@ comes in as a parameter; an M3 nut, ISO 4032, is 5.5 across its flats and 2.4 ta
 Both are drawn with the screw's axis on Z, and the slot opening along +X: rotate and move them into place. The nut
 lies with its flats facing +-Y and its corners along X, as it slides. The slot is the nut's flats wide, plus fit
 each side - a hole's compensation and the nut's play together. Behind the axis it ends where the nut's back corner
-stops with the nut on the axis, give or take fit; ahead it runs `out` past the axis, to its mouth. Its height h is
+stops with the nut on the axis, give or take fit - square across, or (nut_slot_hex_end) in the nut's own shape; ahead
+it runs `out` past the axis, to its mouth. Its height h is
 the caller's: the nut's, plus play, in whole layers (fdm.scad's whole_layers). A screw through the nut holds it in;
 the roof printed over the slot takes the screw's hole as a bridged_hole (fdm.scad).
 */
@@ -18,6 +19,16 @@ the roof printed over the slot takes the screw's hole as a bridged_hole (fdm.sca
 module nut_slot(af, h, out, fit = 0.3) {
     ac = af / cos(30);
     translate([-(ac / 2 + fit), -(af / 2 + fit), 0]) cube([ac / 2 + fit + out, af + 2 * fit, h]);
+}
+
+// The slot with its back end the nut's own shape: behind the axis, two faces standing where the nut's back faces do,
+// plus fit, in place of the square end. The nut beds against four walls - its flats and the two faces behind them -
+// and stops with its axis on the screw's; the corners behind it stay solid. On a coupon of square, tapered and
+// nut-shaped ends (printer-enclosure, 10 Oct 2026) the nut-shaped ends held the nut still and kept it in the slot,
+// where a square end as wide jammed it, and one narrower let it fall out.
+module nut_slot_hex_end(af, h, out, fit = 0.3) hull() {
+    cylinder(r = (af / 2 + fit) / cos(30), h = h, $fn = 6);
+    translate([0, -(af / 2 + fit), 0]) cube([out, af + 2 * fit, h]);
 }
 
 // The nut, its underside at z = 0. In a fit check, raise it by half the slot's play in height.
