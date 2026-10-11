@@ -110,6 +110,11 @@ weight, doubles `$lw` and `$txt` and weighs again, and draws a dimension each wa
 pull nut in its pocket's seat and down its way out of the block: each intersection must leave nothing, and a
 slot or seat narrower than the nut, or one cut short of the block's face, must leave something.
 
+[`tests/test_printables.py`](tests/test_printables.py) gives `printables.py` an include and a use written inside
+`/* */` comments - a library's usage note, as `lib/axes.scad`'s is, and an example naming a missing file - and needs
+them kept as text: the part is written in and comes out the same solid, `lib/axes.scad` included. Its control: the
+same lines outside a comment are statements, and a missing file named by one stops it.
+
 ## Changing it
 
 Several projects add to this repository, sometimes at the same time.

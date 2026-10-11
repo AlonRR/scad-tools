@@ -25,6 +25,7 @@ Why the one file means the same as the sources:
 - `use <f>` brings in f's modules and functions and nothing else. A library used that way must hold
   nothing else - this refuses one that assigns a variable or draws at its top level - so each goes in
   once, at the end.
+- An include or use inside a /* */ comment - a library's usage note, an example - is text, and stays as it is.
 - A variable assigned again after an include - the usual way to pick a part - takes the later value,
   worked out where it was first assigned. Within one file OpenSCAD warns about the second assignment,
   so the first is given the later value and the later one dropped: the same meaning, and no warning.
@@ -72,6 +73,12 @@ def code(lines):
             inside = token == "/*" if token != "//" else inside
 
 
+def statements(lines):
+    """The indices of the include and use lines that are statements, not text inside a /* */ comment - a
+    library's usage note shows the `use` line a reader copies."""
+    return [i for i in code(lines) if STATEMENT.match(lines[i])]
+
+
 def licence(lines):
     """How many lines the file's licence header takes: its opening // lines, when the first is an SPDX tag."""
     if not lines or not lines[0].startswith("// SPDX-"):
@@ -100,8 +107,10 @@ def join(path, used, suffix):
     collected for the end."""
     out = []
     lines = read(path)
-    for line in lines[licence(lines):]:
-        found = STATEMENT.match(line)
+    lines = lines[licence(lines):]
+    at = set(statements(lines))
+    for i, line in enumerate(lines):
+        found = STATEMENT.match(line) if i in at else None
         if not found:
             out.append(line)
             continue
@@ -225,7 +234,7 @@ def main():
         _, log = render(stl, rel(scad), [])
         render(original, part, [])
         bad = problems(log)
-        left = [line for line in text.splitlines() if STATEMENT.match(line)]
+        left = statements(text.splitlines())
         same = stl.exists() and original.exists() and same_solid(stl_stats(stl), stl_stats(original))
         original.unlink(missing_ok=True)
         verdict = ("FAIL  " + "; ".join(bad)[:200] if bad else "FAIL  an include or use is left" if left
