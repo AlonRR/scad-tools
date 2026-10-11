@@ -13,6 +13,8 @@ git submodule, pinned to the commit it was checked with.
 | [`lib/fdm.scad`](lib/fdm.scad) | shapes the printer needs: teardrop holes across the layers, a hole bridged up through a ceiling, a height in whole layers |
 | [`lib/springs.scad`](lib/springs.scad) | a printed clip's finger as a cantilever: its force, its root stress, how far a force bends it |
 | [`lib/nuts.scad`](lib/nuts.scad) | captive hex nuts in place of heat-set inserts: the slot a nut slides into from one side, its back end square or the nut's own shape, a pull nut's pocket, and the nut, for fit checks |
+| [`lib/gridfinity.scad`](lib/gridfinity.scad) | gridfinity's foot to its standard profile: one foot, and the negative that leaves a foot under each cell of a flat-bottomed model - a negative volume in the slicer |
+| [`lib/draw2d.scad`](lib/draw2d.scad) | 2D drafting, for a dimensioned drawing generated from a model's own values: dimension lines, leaders, headings, axes, and dashed runs for sizes not yet known - its sizes from `$txt`, `$lw` and `$ah` |
 | [`lib/patterns.scad`](lib/patterns.scad) | patterns of holes for a grille or a mesh: the hemp-leaf pattern from its lattice, and a honeycomb of whole hexagonal holes with every web the same |
 | [`scripts/scad-check.sh`](scripts/scad-check.sh) | a part end to end: render, the model's asserts, a manifold mesh - with any repair the slicer made to it, and its own edges - a slice, and the model's `fdm_*` values against the profile it was sliced with; `PARTS=N` for a plate of N separate parts |
 | [`scripts/stl-mesh.py`](scripts/stl-mesh.py) | whether an STL is one clean closed body - or `--bodies N` - from its own edges rather than a slicer's report: PrusaSlicer removes degenerate facets as it loads a mesh and then calls it manifold |
@@ -98,6 +100,11 @@ OpenSCAD with the Manifold backend too.
 hemp-leaf lattice against its holes' share worked out from their shrunk inradius, and a honeycomb against its whole
 holes, each inside the rectangle and one web from its neighbours. Their controls are a bar of another width, and
 holes run into each other by a negative web.
+
+[`tests/test_gridfinity.py`](tests/test_gridfinity.py) draws the foot's negative at 1 x 1, 2 x 1 and with a clearance, and
+weighs it against the slab less each foot worked out from the profile - its control, a clearance the formula does not
+know. [`tests/test_draw2d.py`](tests/test_draw2d.py) weighs a dashed run against its dashes' length times the line's
+weight, doubles `$lw` and `$txt` and weighs again, and draws a dimension each way, a leader and an axis.
 
 [`tests/test_nuts.py`](tests/test_nuts.py) fits a nut in its slot and slides it out through the mouth, and a
 pull nut in its pocket's seat and down its way out of the block: each intersection must leave nothing, and a

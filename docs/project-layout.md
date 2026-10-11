@@ -71,6 +71,12 @@ when one file has grown past what a reader can hold.
 - **A model that fuses its own pieces by overlapping them `eps`** reaches that overlap into whatever sits beside
   them. A clearance check judges an overlap by its depth - its volume over half its surface - not its volume, or it
   reads the model's own fusing as an interference.
+- **Manifold's output does not repeat.** Two renders of one file with the Manifold backend can differ in their
+  facets, their corners and a figure's pixels: run to run, 9 of one model's 27 parts did (11 Oct 2026), and
+  `printables.py`'s same-solid test, which compares corners, failed 3 of its 18. Fingerprint a move with OpenSCAD
+  2021.01, whose output repeats exactly - or under Manifold compare only volume, area and box - and compare each
+  figure with one rendered from the old files in the same run of the same OpenSCAD, never with the committed
+  picture, which may predate other changes.
 - **A solid that meets itself along an edge** is one closed solid to Manifold, but an exported STL merges the
   corners and gives the edge four faces, which trimesh calls open. Measure volumes as Manifold reads them.
 
