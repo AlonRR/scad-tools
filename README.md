@@ -43,6 +43,9 @@ git submodule add https://github.com/AlonRR/scad-tools scad-tools
   parts = ["models/box-back.scad", "models/box-cover.scad"]   # each part's own file
   ```
 
+- **Layout**: a model with several parts lays out its files as [`docs/project-layout.md`](docs/project-layout.md)
+  says - the files to open at the top, and what they are built from in folders: bought parts, helpers, the
+  printed parts, the assembly, and what the checks read - with the rules that hold them together.
 - **Updating**: `git -C scad-tools pull`, run the project's checks, and commit the new pin. The project
   records the exact commit; nothing changes under it until it is bumped.
 
